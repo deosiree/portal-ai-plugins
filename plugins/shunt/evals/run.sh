@@ -81,7 +81,13 @@ run_eval() {
   else
     result=$(echo "$input" | bash "$hook" 2>/dev/null)
   fi
-  actual=$(echo "$result" | jq -r '.decision')
+  actual=$(echo "$result" | jq -r '
+    if .decision == "block" then "block"
+    elif .decision == null and . == {} then "allow"
+    elif .decision == "allow" then "invalid-explicit-allow"
+    else "invalid-output"
+    end
+  ' 2>/dev/null || echo "invalid-json")
 
   if [ "$actual" = "$expected" ]; then
     printf "  \033[32mPASS\033[0m  %-30s %s\n" "$name" "$reason"
